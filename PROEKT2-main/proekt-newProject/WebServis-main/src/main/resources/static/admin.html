@@ -133,7 +133,10 @@
             <input type="date" id="updateEndDate" required>
 
             <label for="updateStatus">Status:</label>
-            <input type="text" id="updateStatus" disabled>
+            <select id="updateStatus">
+                <option value="Active">Active</option>
+                <option value="Expired">Expired</option>
+            </select>
 
             <button id="updateDiscountBtn">Update Discount</button>
         </div>
@@ -366,7 +369,6 @@
                     document.getElementById('updateStatus').value = discountData.status;
 
                     document.getElementById('updateStartDate').disabled = true;
-                    document.getElementById("updateStatus").disabled = true;
                 })
                 .catch(error => {
                     console.error('Error:', error);

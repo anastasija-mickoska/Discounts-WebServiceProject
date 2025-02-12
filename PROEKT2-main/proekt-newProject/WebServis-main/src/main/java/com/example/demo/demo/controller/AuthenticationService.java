@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.demo.demo.com.example.config.JwtService;
 import com.example.demo.demo.model.Role;
+import com.example.demo.demo.repository.BookingRepository;
 import com.example.demo.demo.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class AuthenticationService {
     
     private final UserRepository repository;
+    private final BookingRepository bookingRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -66,14 +68,13 @@ public AuthenticationResponse register(RegisterRequest request) {
         // Find the user by userId
         var user = repository.findById(userId)
             .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-    
-        // Delete the user from the database
-        repository.delete(user);
-    
+            bookingRepository.deleteByUserIdUser(userId);  
+            repository.deleteById(userId); 
         return AuthenticationResponse.builder()
-            .token("User successfully unregistered.")  // Return a success message instead of a token
+            .token("User and their bookings successfully unregistered.")  // Return a success message instead of a token
             .build();
     }
+    
     
     
 

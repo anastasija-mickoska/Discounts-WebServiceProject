@@ -67,6 +67,7 @@
     <a href="index.html">Back to Home</a>
 
     <script>
+        const token = localStorage.getItem("token");
         document.getElementById("unregisterForm").addEventListener("submit", function (event) {
             event.preventDefault();
             fetch("/api/v1/auth/unregister", {

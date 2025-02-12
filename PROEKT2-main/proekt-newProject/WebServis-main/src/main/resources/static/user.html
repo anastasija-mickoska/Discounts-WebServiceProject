@@ -97,12 +97,27 @@
         #discountButtons {
             display: flex;
         }
+        .btn {
+            display: block;
+            width: 200px;
+            margin: 10px auto;
+            padding: 10px;
+            text-decoration: none;
+            color: white;
+            font-size: 18px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .btn-unregister { background-color: #dc3545; }
     </style>
 </head>
 
 <body>
     <main>
-        <h1 id="welcome">Welcome, User</h1>
+        <div style="display:flex; width:100%; margin-left:20%">
+            <h1 id="welcome">Welcome, User</h1>
+            <a href="unregister.html" class="btn btn-unregister">Unregister</a>
+        </div>
         <section>
             <h2>Destinations</h2>
             <button id="listDestinations">List Destinations</button>
