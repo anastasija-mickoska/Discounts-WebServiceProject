@@ -18,7 +18,7 @@ import javax.xml.bind.annotation.XmlType;
 public class Booking {
     @XmlElement(name="id",required = true)
     private Integer id;
-    @XmlElement(name="discountDescription",required = true)
+    @XmlElement(name="discountDescription")
     private String discountDescription;
     @XmlElement(name = "reservationDate")
     private Date reservationDate;

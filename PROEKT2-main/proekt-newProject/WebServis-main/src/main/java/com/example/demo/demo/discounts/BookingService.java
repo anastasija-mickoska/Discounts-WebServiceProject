@@ -37,7 +37,11 @@ public class BookingService {
             com.example.demo.demo.discounts.Booking booking = new com.example.demo.demo.discounts.Booking();
  
             booking.setId(bookingList.get(i).getId());
-            booking.setDiscountDescription(bookingList.get(i).getDiscount().getDescription());
+            if (bookingList.get(i).getDiscount() != null) {
+                booking.setDiscountDescription(bookingList.get(i).getDiscount().getDescription());
+            } else {
+                booking.setDiscountDescription(" "); 
+            }
             booking.setReservationDate(bookingList.get(i).getReservationDate());
             booking.setUser(bookingList.get(i).getUser());
             bookings.put(booking.getId(), booking);
