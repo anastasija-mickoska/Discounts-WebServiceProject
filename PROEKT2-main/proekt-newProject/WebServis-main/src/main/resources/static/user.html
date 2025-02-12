@@ -17,10 +17,12 @@
             justify-content: center;
             height: 100vh;
         }
+
         h1 {
             margin: 0;
             text-align: center;
         }
+
         main {
             background-color: white;
             padding: 30px;
@@ -89,7 +91,8 @@
             overflow-y: auto;
         }
 
-        .discount, .booking {
+        .discount,
+        .booking {
             border-radius: 5px;
             border: 1px solid grey;
         }
@@ -97,6 +100,7 @@
         #discountButtons {
             display: flex;
         }
+
         .btn {
             display: block;
             width: 200px;
@@ -108,7 +112,10 @@
             border-radius: 5px;
             text-align: center;
         }
-        .btn-unregister { background-color: #dc3545; }
+
+        .btn-unregister {
+            background-color: #dc3545;
+        }
     </style>
 </head>
 
@@ -154,6 +161,7 @@
                 <option value="Travel">Travel</option>
                 <option value="Food">Food</option>
                 <option value="Accommodation">Accommodation</option>
+                <option value="Other">Other</option>
             </select>
             <button id="listDiscountsByStatusAndType">List Discounts</button>
             <br><br>
@@ -184,7 +192,7 @@
         const token = localStorage.getItem("token");
         const username = localStorage.getItem("username");
         document.addEventListener("DOMContentLoaded", function () {
-            document.getElementById("welcome").innerHTML="Welcome, "+username;
+            document.getElementById("welcome").innerHTML = "Welcome, " + username;
             if (!token || !username) {
                 window.location.href = "login.html";
             } else {
@@ -238,12 +246,19 @@
                     const discounts = responseXml.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "discounts");
                     const discountSelect = document.getElementById("discountSelect");
                     Array.from(discounts).forEach(discount => {
-                        const id = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "id")[0]?.textContent;
-                        const description = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "description")[0].textContent;
-                        const option = document.createElement("option");
-                        option.value = id;
-                        option.textContent = `${description} - ID: ${id}`;
-                        discountSelect.appendChild(option);
+                        const statusElement = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "status")[0];
+                        const idElement = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "id")[0];
+                        const descriptionElement = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "description")[0];
+
+                        if (statusElement?.textContent === 'Active' && idElement && descriptionElement) {
+                            const id = idElement.textContent;
+                            const description = descriptionElement.textContent;
+
+                            const option = document.createElement("option");
+                            option.value = id;
+                            option.textContent = `${description} - ID: ${id}`;
+                            discountSelect.appendChild(option);
+                        }
                     });
                 } else {
                     console.error("Failed to fetch discounts");

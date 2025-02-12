@@ -75,6 +75,7 @@
                 <option value="Travel">Travel</option>
                 <option value="Food">Food</option>
                 <option value="Accommodation">Accommodation</option>
+                <option value="Other">Other</option>
             </select>
             <label for="discountValue">Discount Value:</label>
             <input type="number" id="discountValue" name="discountValue" required>
@@ -119,6 +120,7 @@
                 <option value="Food">Food</option>
                 <option value="Travel">Travel</option>
                 <option value="Accommodation">Accommodation</option>
+                <option value="Other">Other</option>
             </select>
             <label for="updateDiscountValue">Discount Value:</label>
             <input type="text" id="updateDiscountValue" required>
@@ -261,7 +263,7 @@
             const destinationData = {
                 name: document.getElementById("destinationName").value,
                 description: document.getElementById("destinationDescription").value,
-                country:document.getElementById("destinationCountry").value,
+                country: document.getElementById("destinationCountry").value,
             };
             fetch("/destinations", {
                 method: "POST",
@@ -420,28 +422,35 @@
                         data.forEach(booking => {
                             const b = document.createElement("div");
                             b.classList.add("booking");
+
+                            const desc = booking.discount?.description || "No discount"; // Safe handling
+
+                            console.log("DESCRIPTION: " + desc);
+
                             b.innerHTML = `
-                        <p><strong>ID:</strong> ${booking.id}</p>
-                        <p><strong>Username:</strong> ${booking.user.username}</p>
-                        <p><strong>Discount description:</strong> ${booking.discount.description}</p>
-                        <p><strong>Reservation Date:</strong> ${booking.reservationDate}</p>
-                        `;
+            <p><strong>ID:</strong> ${booking.id}</p>
+            <p><strong>Username:</strong> ${booking.user.username}</p>
+            <p><strong>Discount description:</strong> ${desc}</p>
+            <p><strong>Reservation Date:</strong> ${booking.reservationDate}</p>
+        `;
                             bookings.appendChild(b);
                         });
-                    }
-                    else if (data && typeof data === 'object') {
+                    } else if (data && typeof data === 'object') {
                         const b = document.createElement("div");
                         b.classList.add("booking");
+
+                        const desc = data.discount?.description || "No discount";
+
                         b.innerHTML = `
                         <p><strong>ID:</strong> ${data.id}</p>
                         <p><strong>Username:</strong> ${data.user.username}</p>
-                        <p><strong>Discount description:</strong> ${data.discount.description}</p>
-                        <p><strong>Reservation Date:</strong> ${data.reservationDate}</p>  
-                        `;
+                        <p><strong>Discount description:</strong> ${desc}</p>
+                        <p><strong>Reservation Date:</strong> ${data.reservationDate}</p>  `;
                         bookings.appendChild(b);
                     } else {
                         bookings.innerHTML = "<p>No bookings available.</p>";
                     }
+
                 });
         });
 
@@ -470,12 +479,12 @@
                     })
                     .then(data => {
                         if (data && typeof data === 'object') {
+                            const desc = data.discount?.description || "No discount"; 
                             booking.innerHTML = `
-                                <p><strong>ID:</strong> ${data.id}</p>
-                                <p><strong>Username:</strong> ${data.user.username}</p>
-                                <p><strong>Discount description:</strong> ${data.discount.description}</p>
-                                <p><strong>Reservation Date:</strong> ${data.reservationDate}</p>
-                            `;
+                            <p><strong>ID:</strong> ${data.id}</p>
+                            <p><strong>Username:</strong> ${data.user.username}</p>
+                            <p><strong>Discount description:</strong> ${desc}</p>
+                            <p><strong>Reservation Date:</strong> ${data.reservationDate}</p>`;
                         }
                     })
                     .catch(error => {
