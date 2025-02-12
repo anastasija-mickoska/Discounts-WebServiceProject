@@ -1,5 +1,6 @@
 package com.example.demo.demo.service;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import com.example.demo.demo.model.Discount;
 import com.example.demo.demo.model.Booking;
@@ -19,7 +20,8 @@ public class DiscountService {
     private final DestinationRepository destinationRepository;
     private final BookingRepository bookingRepository;
 
-    public DiscountService(DiscountRepository discountRepository, DestinationRepository destinationRepository, BookingRepository bookingRepository) {
+    public DiscountService(DiscountRepository discountRepository, DestinationRepository destinationRepository,
+            BookingRepository bookingRepository) {
         this.discountRepository = discountRepository;
         this.destinationRepository = destinationRepository;
         this.bookingRepository = bookingRepository;
@@ -29,7 +31,7 @@ public class DiscountService {
     public Discount addDiscount(Discount discount) {
         return discountRepository.save(discount);
     }
-  
+
     // Add a discount to a destination
     public Discount addDiscountToDestination(Integer destinationId, Discount discount) {
         Optional<Destination> destinationOptional = destinationRepository.findById(destinationId);
@@ -54,19 +56,27 @@ public class DiscountService {
 
     // Remove a discount from a destination
     public void removeDiscount(Integer discountId) {
-        if (discountRepository.existsById(discountId)) {
-            Discount discount = discountRepository.findById(discountId).orElseThrow(() ->
-                new IllegalArgumentException("Discount with ID " + discountId + " not found.")
-            );
-            List<Booking> bookings = bookingRepository.findByDiscountId(discountId);
-            for(Booking booking : bookings) {
-                booking.setDiscount(null);
-                bookingRepository.save(booking); // Save the booking after modifying the discount association
-            }
-            discount.setDestination(null); // Detach from destination
-            discountRepository.delete(discount);
-        } else {
+        if (!discountRepository.existsById(discountId)) {
             throw new IllegalArgumentException("Discount with ID " + discountId + " does not exist.");
+        }
+
+        Discount discount = discountRepository.findById(discountId)
+                .orElseThrow(() -> new IllegalArgumentException("Discount with ID " + discountId + " not found."));
+        List<Booking> bookings = bookingRepository.findByDiscountId(discountId);
+        for (Booking booking : bookings) {
+            booking.setDiscount(null);
+            bookingRepository.save(booking);
+        }
+        if (discount.getDestination() != null) {
+            Destination destination = discount.getDestination();
+            destination.getDiscounts().remove(discount); 
+            discount.setDestination(null); 
+            destinationRepository.save(destination);
+        }
+        try {
+            discountRepository.delete(discount);
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalArgumentException("Cannot delete discount. It is still referenced.");
         }
     }
 
@@ -86,12 +96,12 @@ public class DiscountService {
         return discountRepository.findAll();
     }
 
-    //Filter discount by destination name or country
+    // Filter discount by destination name or country
     public List<Discount> filterDiscountsByDestination(String destination) {
         return discountRepository.filterByDestination(destination);
     }
 
-    //Update discount 
+    // Update discount
     public Discount updateDiscount(Integer id, Discount updatedDiscount) {
         Discount discount = discountRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Discount not found with ID: " + id));
@@ -122,7 +132,9 @@ public class DiscountService {
 
         return discountRepository.save(discount);
     }
+
     public Discount getDiscountById(Integer discountId) {
-        return discountRepository.findById(discountId).orElseThrow(() -> new IllegalArgumentException("Discount with ID " + discountId + " not found."));
+        return discountRepository.findById(discountId)
+                .orElseThrow(() -> new IllegalArgumentException("Discount with ID " + discountId + " not found."));
     }
 }
