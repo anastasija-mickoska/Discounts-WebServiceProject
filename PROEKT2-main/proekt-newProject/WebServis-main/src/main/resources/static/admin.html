@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        .form-container,
+        .booking {
+            margin-bottom: 20px;
+            border: 1px solid #a0a0a0;
+            border-radius: 5px;
+            padding: 50px;
+            box-shadow: 3px 3px 5px #a0a0a0;
+        }
+
+        .form-container label,
+        .form-container input,
+        .form-container select,
+        .form-container button {
+            margin: 10px 0;
+            display: block;
+            width: 100%;
+            padding: 8px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Admin Dashboard</h2>
+
+    <div class="form-container">
+        <h3>Add New Destination</h3>
+        <form id="addDestinationForm">
+            <label for="destinationName">Destination Name:</label>
+            <input type="text" id="destinationName" required>
+            <label for="destinationDescription">Description:</label>
+            <input type="text" id="destinationDescription" required>
+            <label for="destinationCountry">Destination Country:</label>
+            <input type="text" id="destinationCountry" required>
+            <button type="submit">Add Destination</button>
+        </form>
+    </div>
+
+    <div class="form-container">
+        <h3>Add Discount to Destination</h3>
+        <form id="discountForm">
+            <label for="discountDescription">Discount Description:</label>
+            <input type="text" id="discountDescription" name="discountDescription" required>
+
+            <label for="discountType">Discount Type:</label>
+            <select id="discountType" name="discountType" required>
+                <option value="">Select Discount Type</option>
+                <option value="Travel">Travel</option>
+                <option value="Food">Food</option>
+                <option value="Accommodation">Accommodation</option>
+            </select>
+            <label for="discountValue">Discount Value:</label>
+            <input type="number" id="discountValue" name="discountValue" required>
+
+            <label for="discountPrice">Discount Price:</label>
+            <input type="number" id="discountPrice" name="discountPrice" required>
+
+            <label for="endDate">End Date:</label>
+            <input type="date" id="endDate" name="endDate" required>
+
+            <label for="destinationIdForDiscount">Select Destination:</label>
+            <select id="destinationIdForDiscount">
+                <option value="">Select Destination</option>
+            </select>
+
+            <button type="submit">Apply Discount</button>
+        </form>
+    </div>
+
+    <div class="form-container">
+        <h3>Remove Discount from Destination</h3>
+        <label for="discountIdForRemove">Select Discount:</label>
+        <select id="discountIdForRemove">
+            <option value="">Select Discount</option>
+        </select>
+        <button id="removeDiscountFromDestinationBtn">Remove Discount</button>
+    </div>
+
+    <div class="form-container">
+        <h3>Update Discount</h3>
+
+        <select id="discountIdUpdate">
+            <option value="">Select Discount</option>
+        </select>
+
+        <div id="updateFormContainer" style="display:none;">
+            <label for="updateDiscountDescription">Description:</label>
+            <input type="text" id="updateDiscountDescription" required>
+
+            <label for="updateDiscountType">Discount Type:</label>
+            <select id="updateDiscountType">
+                <option value="Food">Food</option>
+                <option value="Travel">Travel</option>
+                <option value="Accommodation">Accommodation</option>
+            </select>
+            <label for="updateDiscountValue">Discount Value:</label>
+            <input type="text" id="updateDiscountValue" required>
+
+            <label for="updateDiscountPrice">Price:</label>
+            <input type="text" id="updateDiscountPrice" required>
+
+            <label for="updateStartDate">Start Date:</label>
+            <input type="text" id="updateStartDate" disabled>
+
+            <label for="updateEndDate">End Date:</label>
+            <input type="date" id="updateEndDate" required>
+
+            <label for="updateStatus">Status:</label>
+            <input type="text" id="updateStatus" disabled>
+
+            <button id="updateDiscountBtn">Update Discount</button>
+        </div>
+    </div>
+
+    <div class="form-container">
+        <h3>List All Bookings</h3>
+        <button id="listAllBookingsBtn">List All Bookings</button>
+    </div>
+
+    <div id="resultsAllBookings"></div>
+
+    <div class="form-container">
+        <h3>List Booking by ID</h3>
+        <label for="bookingId">Booking ID:</label>
+        <input type="text" id="bookingId">
+        <button id="listBookingByIdBtn">List Booking</button>
+    </div>
+
+    <div id="resultsBookingById"></div>
+
+    <div class="form-container">
+        <h3>Delete Booking</h3>
+        <label for="deleteBookingId">Booking ID:</label>
+        <input type="text" id="deleteBookingId">
+        <button id="deleteBookingBtn">Delete Booking</button>
+    </div>
+
+    <div id="resultsDeleteById"></div>
+
+    <script>
+        const token = localStorage.getItem("token");
+        const username = localStorage.getItem("username");
+        document.addEventListener("DOMContentLoaded", function () {
+            if (!token) {
+                window.location.href = "login.html";
+            } else {
+                fetch("/api/v1/auth/verify-token", {
+                    method: "GET",
+                    headers: { "Authorization": "Bearer " + token }
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error("Unauthorized");
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                    })
+                    .catch(() => {
+                        localStorage.removeItem("token");
+                        localStorage.removeItem("username");
+                        window.location.href = "login.html";
+                    });
+            }
+            fetch("/destinations", {
+                method: "GET",
+                headers: {
+                    "Authorization": "Bearer " + token
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to fetch destinations");
+                    }
+                    return response.json();
+                })
+                .then(destinations => {
+                    const destinationSelect = document.getElementById("destinationIdForDiscount");
+                    destinations.forEach(destination => {
+                        const option = document.createElement("option");
+                        option.value = destination.id;
+                        option.textContent = destination.name;
+                        destinationSelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error("Error loading destinations:", error));
+
+            const soapRequest = `
+            <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                            xmlns:web="http://demo.demo.example.com/discounts">
+                <soapenv:Header/>
+                <soapenv:Body>
+                    <web:GetAllDiscountsRequest/>
+                </soapenv:Body>
+            </soapenv:Envelope>
+            `;
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "https://localhost:8443/ws/discounts", true);
+            xhr.setRequestHeader("Content-Type", "text/xml");
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    const responseXml = xhr.responseXML;
+                    const discounts = responseXml.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "discounts");
+                    const discountSelect = document.getElementById("discountIdForRemove");
+                    const discountUpdate = document.getElementById("discountIdUpdate");
+                    Array.from(discounts).forEach(discount => {
+                        const id = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "id")[0]?.textContent;
+                        const description = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "description")[0].textContent;
+                        const optionForSelect = document.createElement("option");
+                        optionForSelect.value = id;
+                        optionForSelect.textContent = `${description} - ID: ${id}`;
+                        discountSelect.appendChild(optionForSelect);
+                        const optionForUpdate = document.createElement("option");
+                        optionForUpdate.value = id;
+                        optionForUpdate.textContent = `${description} - ID: ${id}`;
+                        discountUpdate.appendChild(optionForUpdate);
+                    });
+                } else {
+                    console.error("Failed to fetch discounts");
+                }
+            };
+            xhr.onerror = function () {
+                console.error("Error making the SOAP request");
+            };
+            xhr.send(soapRequest);
+        });
+
+        //Add destination
+        document.getElementById("addDestinationForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+            const destinationData = {
+                name: document.getElementById("destinationName").value,
+                description: document.getElementById("destinationDescription").value,
+                country:document.getElementById("destinationCountry").value,
+            };
+            fetch("/destinations", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify(destinationData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    alert("Destination saved successfully!");
+                })
+                .catch(error => console.error("Error:", error));
+
+        });
+
+        //Add discount to a destination 
+        document.getElementById("discountForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+            const destinationId = document.getElementById("destinationIdForDiscount").value;
+            const today = new Date().toISOString().split(" ")[0];
+            const discountData = {
+                description: document.getElementById("discountDescription").value,
+                discountType: document.getElementById("discountType").value,
+                discountValue: parseFloat(document.getElementById("discountValue").value),
+                price: parseFloat(document.getElementById("discountPrice").value),
+                startDate: today,
+                endDate: document.getElementById("endDate").value,
+                status: "Active"
+            };
+            console.log(discountData);
+            fetch(`/destinations/${destinationId}/discounts`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify(discountData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    alert("Discount applied successfully!");
+                })
+                .catch(error => console.error("Error:", error));
+        });
+
+        //Remove discount 
+        document.getElementById("removeDiscountFromDestinationBtn").addEventListener("click", function () {
+            const discountId = document.getElementById("discountIdForRemove").value;
+
+            if (!discountId) {
+                alert("Please select a discount.");
+                return;
+            }
+
+            console.log(`Removing discount with ID: ${discountId}`);
+
+            fetch(`/destinations/discounts/${discountId}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": "Bearer " + token,
+                    "Content-Type": "application/json"
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => { throw new Error(text); });
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    alert("Discount removed successfully.");
+                })
+                .catch(error => {
+                    console.error("Error removing discount:", error);
+                    alert("Failed to remove discount: " + error.message);
+                });
+        });
+
+        //Get data for the selected discount to update
+        document.getElementById("discountIdUpdate").addEventListener('change', (e) => {
+            const selectedDiscountId = parseInt(e.target.value);
+            fetch(`/destinations/discounts/${selectedDiscountId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ` + token,
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Discount not found');
+                    }
+                    return response.json();
+                })
+                .then(discountData => {
+                    document.getElementById("updateFormContainer").style.display = "block"
+                    document.getElementById('updateDiscountValue').value = discountData.discountValue;
+                    document.getElementById('updateDiscountDescription').value = discountData.description;
+                    document.getElementById('updateDiscountType').value = discountData.discountType;
+                    document.getElementById('updateDiscountPrice').value = discountData.price;
+                    document.getElementById('updateStartDate').value = discountData.startDate;
+                    document.getElementById('updateEndDate').value = discountData.endDate;
+                    document.getElementById('updateStatus').value = discountData.status;
+
+                    document.getElementById('updateStartDate').disabled = true;
+                    document.getElementById("updateStatus").disabled = true;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        });
+
+        // Update discount 
+        document.getElementById("updateDiscountBtn").addEventListener("click", function () {
+            const updateDiscountId = parseInt(document.getElementById("discountIdUpdate").value);
+            const updatedDiscountData = {
+                description: document.getElementById("updateDiscountDescription").value,
+                discountType: document.getElementById("updateDiscountType").value,
+                discountValue: parseFloat(document.getElementById("updateDiscountValue").value),
+                price: parseFloat(document.getElementById("updateDiscountPrice").value),
+                startDate: document.getElementById("updateStartDate").value,
+                endDate: document.getElementById("updateEndDate").value,
+                status: document.getElementById("updateStatus").value
+            };
+            fetch(`/destinations/discounts/${updateDiscountId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ` + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedDiscountData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    alert("Discount updated successfully!");
+                })
+                .catch(error => console.error("Error:", error));
+
+        });
+
+        //List all bookings
+        document.getElementById("listAllBookingsBtn").addEventListener("click", function () {
+            fetch("/bookings", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const bookings = document.getElementById("resultsAllBookings");
+                    bookings.innerHTML = "";
+                    if (Array.isArray(data)) {
+                        data.forEach(booking => {
+                            const b = document.createElement("div");
+                            b.classList.add("booking");
+                            b.innerHTML = `
+                        <p><strong>ID:</strong> ${booking.id}</p>
+                        <p><strong>Username:</strong> ${booking.user.username}</p>
+                        <p><strong>Discount description:</strong> ${booking.discount.description}</p>
+                        <p><strong>Reservation Date:</strong> ${booking.reservationDate}</p>
+                        `;
+                            bookings.appendChild(b);
+                        });
+                    }
+                    else if (data && typeof data === 'object') {
+                        const b = document.createElement("div");
+                        b.classList.add("booking");
+                        b.innerHTML = `
+                        <p><strong>ID:</strong> ${data.id}</p>
+                        <p><strong>Username:</strong> ${data.user.username}</p>
+                        <p><strong>Discount description:</strong> ${data.discount.description}</p>
+                        <p><strong>Reservation Date:</strong> ${data.reservationDate}</p>  
+                        `;
+                        bookings.appendChild(b);
+                    } else {
+                        bookings.innerHTML = "<p>No bookings available.</p>";
+                    }
+                });
+        });
+
+        //List booking by ID
+        document.getElementById("listBookingByIdBtn").addEventListener("click", function () {
+            const bookingId = parseInt(document.getElementById("bookingId").value);
+            const booking = document.getElementById("resultsBookingById");
+
+            booking.classList.add("booking");
+            booking.innerHTML = "";
+
+            if (bookingId) {
+                fetch(`/bookings/${bookingId}`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    }
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            booking.innerHTML = `<p>No booking with ID ${bookingId} found.</p>`;
+                            return null;
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data && typeof data === 'object') {
+                            booking.innerHTML = `
+                                <p><strong>ID:</strong> ${data.id}</p>
+                                <p><strong>Username:</strong> ${data.user.username}</p>
+                                <p><strong>Discount description:</strong> ${data.discount.description}</p>
+                                <p><strong>Reservation Date:</strong> ${data.reservationDate}</p>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        booking.innerHTML = `<p>An error occurred while retrieving the booking data.</p>`;
+                    });
+            } else {
+                booking.innerHTML = "<p>Please enter a valid booking ID.</p>";
+            }
+        });
+
+        //Delete booking by ID
+        document.getElementById("deleteBookingBtn").addEventListener("click", function () {
+            const bookingId = parseInt(document.getElementById("deleteBookingId").value);
+            const booking = document.getElementById("resultsDeleteById");
+
+            booking.classList.add("booking");
+            booking.innerHTML = "";
+
+            if (bookingId) {
+                fetch(`/bookings/${bookingId}`, {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    }
+                })
+                    .then(response => {
+                        if (response.status === 204) {
+                            booking.innerHTML = "<p>Booking deleted successfully.</p>";
+                        } else if (!response.ok) {
+                            booking.innerHTML = `<p>No booking with ID ${bookingId} found.</p>`;
+                        } else {
+                            return response.json();
+                        }
+                    })
+                    .then(data => {
+                        if (data && typeof data === 'object') {
+                            alert("Booking deleted successfully.");
+                        }
+                    });
+            } else {
+                booking.innerHTML = "<p>Please enter a valid booking ID.</p>";
+            }
+        });
+    </script>
+</body>
+
+</html>

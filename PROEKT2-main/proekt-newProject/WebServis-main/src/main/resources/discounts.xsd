@@ -1,0 +1,109 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://demo.demo.example.com/discounts"
+    xmlns:tns="http://demo.demo.example.com/discounts" elementFormDefault="qualified">
+
+    <xs:complexType name="Discount">
+        <xs:sequence>
+            <xs:element name="id" type="xs:int"/>
+            <xs:element name="description" type="xs:string"/>
+            <xs:element name="type" type="xs:string"/>
+            <xs:element name="status" type="xs:string"/>
+            <xs:element name="value" type="xs:double"/>
+            <xs:element name="startDate" type="xs:date"/>
+            <xs:element name="endDate" type="xs:date"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- Define DiscountResponse -->
+    <xs:element name="DiscountResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="discounts" type="tns:Discount" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <!-- Operation-specific Request Types -->
+
+    <!-- Request type for listDiscountsByStatusAndType -->
+    <xs:element name="DiscountByStatusAndTypeRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="status" type="xs:string" />
+                <xs:element name="type" type="xs:string"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <!-- Request type for listDiscountsAbove45 -->
+    <xs:element name="DiscountAbove45Request">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="minDiscount" type="xs:string" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <!-- Request type for listDiscountsEndingIn2Days -->
+    <xs:element name="DiscountEndingIn2DaysRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="daysUntilEnd" type="xs:int" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <!-- Define Request and Response Elements for each Operation -->
+
+    <!-- Operation 1: listDiscountsByStatusAndType
+    <xs:element name="listDiscountsByStatusAndTypeRequest" type="tns:DiscountByStatusAndTypeRequest"/>
+    <xs:element name="listDiscountsByStatusAndTypeResponse" type="tns:DiscountResponse"/>-->
+
+    <!-- Operation 2: listDiscountsAbove45 
+    <xs:element name="listDiscountsAbove45Request" type="tns:DiscountAbove45Request"/>
+    <xs:element name="listDiscountsAbove45Response" type="tns:DiscountResponse"/>-->
+
+    <!-- Operation 3: listDiscountsEndingIn2Days 
+    <xs:element name="listDiscountsEndingIn2DaysRequest" type="tns:DiscountEndingIn2DaysRequest"/>
+    <xs:element name="listDiscountsEndingIn2DaysResponse" type="tns:DiscountResponse"/> -->
+
+    <xs:element name="GetAllDiscountsRequest" type="xs:empty"/>
+
+    <xs:element name="GetAllDiscountsResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="discounts" type="tns:Discount" maxOccurs="unbounded" minOccurs="0"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="GetUserBookingsRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="userId" type="xs:int"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="GetUserBookingsResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="bookings" type="tns:Booking" maxOccurs="unbounded" minOccurs="0"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="GetSortedDiscountsRequest" type="xs:empty"/>
+
+    <xs:element name="GetSortedDiscountsResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="discounts" type="tns:Discount" maxOccurs="unbounded" minOccurs="0"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="Booking">
+        <xs:sequence>
+            <xs:element name="id" type="xs:int"/>
+            <xs:element name="discountDescription" type="xs:string"/>
+            <xs:element name="reservationDate" type="xs:date"/>
+        </xs:sequence>
+    </xs:complexType>
+
+</xs:schema>

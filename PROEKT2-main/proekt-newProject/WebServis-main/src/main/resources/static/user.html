@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        h1 {
+            margin: 0;
+            text-align: center;
+        }
+        main {
+            background-color: white;
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            min-width: 900px;
+        }
+
+        section {
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            margin-right: 10px;
+            margin-left: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        input {
+            padding: 8px 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 200px;
+            margin-right: 10px;
+        }
+
+        input:focus {
+            border-color: #4CAF50;
+        }
+
+        #outputSection {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+
+        #results {
+            font-family: monospace;
+            white-space: pre-wrap;
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .discount, .booking {
+            border-radius: 5px;
+            border: 1px solid grey;
+        }
+
+        #discountButtons {
+            display: flex;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <h1 id="welcome">Welcome, User</h1>
+        <section>
+            <h2>Destinations</h2>
+            <button id="listDestinations">List Destinations</button>
+            <br><br>
+
+            <h2>Discounts</h2>
+            <div id="discountButtons">
+                <button id="listAllDiscounts">List All Discounts</button>
+                <br><br>
+                <button id="listSortedDiscounts">List All Discounts Sorted by Value</button>
+                <br><br>
+                <button id="listDiscountsAbove45">List Discounts With Value Greater Than 45%</button>
+                <br><br>
+                <button id="listDiscountsEndingIn2Days">List Discounts Ending In 2 Days</button>
+                <br><br>
+            </div>
+
+
+            <h2>List Discounts by Destination</h2>
+            <select id="destinationSelect">
+                <option value="">Select a Destination</option>
+            </select>
+            <button id="listDiscountsForDestination">List Discounts</button>
+            <br><br>
+
+            <h2>List Discounts by Status and Type</h2>
+            <select id="statusSelect">
+                <option value="">Select status</option>
+                <option value="Active">Active</option>
+                <option value="Expired">Expired</option>
+            </select>
+            <select id="discountTypeSelect">
+                <option value="">Select type</option>
+                <option value="Travel">Travel</option>
+                <option value="Food">Food</option>
+                <option value="Accommodation">Accommodation</option>
+            </select>
+            <button id="listDiscountsByStatusAndType">List Discounts</button>
+            <br><br>
+
+            <h2>Filter Discounts by Destination name or country</h2>
+            <input type="text" id="destinationFilter" placeholder="Enter destination name or country">
+            <button id="filterDiscountsByDestination">Filter</button>
+            <br><br>
+
+            <h2>Booking</h2>
+            <form id="addBookingForm">
+                <label>Choose discount:</label>
+                <select id="discountSelect">
+                    <option value="">Select a Discount</option>
+                </select>
+                <button type="submit">Add Booking</button>
+            </form>
+            <button id="listMyBookings">List My Bookings</button>
+            <br><br>
+
+        </section>
+        <section id="outputSection">
+            <h2>Results</h2>
+            <div id="results"></div>
+        </section>
+    </main>
+    <script>
+        const token = localStorage.getItem("token");
+        const username = localStorage.getItem("username");
+        document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById("welcome").innerHTML="Welcome, "+username;
+            if (!token || !username) {
+                window.location.href = "login.html";
+            } else {
+                fetch("/api/v1/auth/verify-token", {
+                    method: "GET",
+                    headers: { "Authorization": "Bearer " + token }
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error("Unauthorized");
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                    })
+                    .catch(() => {
+                        localStorage.removeItem("token");
+                        localStorage.removeItem("username");
+                        window.location.href = "login.html";
+                    });
+            }
+            fetch("/destinations")
+                .then(response => response.json())
+                .then(data => {
+                    const destinationSelect = document.getElementById("destinationSelect");
+                    data.forEach(destination => {
+                        const option = document.createElement("option");
+                        option.value = destination.id;
+                        option.textContent = destination.name;
+                        destinationSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error("Error fetching destinations:", error);
+                });
+            const soapRequest = `
+        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                          xmlns:web="http://demo.demo.example.com/discounts">
+            <soapenv:Header/>
+            <soapenv:Body>
+                <web:GetAllDiscountsRequest/>
+            </soapenv:Body>
+        </soapenv:Envelope>
+        `;
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "https://localhost:8443/ws/discounts", true);
+            xhr.setRequestHeader("Content-Type", "text/xml");
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    const responseXml = xhr.responseXML;
+                    const discounts = responseXml.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "discounts");
+                    const discountSelect = document.getElementById("discountSelect");
+                    Array.from(discounts).forEach(discount => {
+                        const id = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "id")[0]?.textContent;
+                        const description = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "description")[0].textContent;
+                        const option = document.createElement("option");
+                        option.value = id;
+                        option.textContent = `${description} - ID: ${id}`;
+                        discountSelect.appendChild(option);
+                    });
+                } else {
+                    console.error("Failed to fetch discounts");
+                }
+            };
+            xhr.onerror = function () {
+                console.error("Error making the SOAP request");
+            };
+            xhr.send(soapRequest);
+        });
+
+        //List all destinations
+        document.getElementById("listDestinations").addEventListener("click", function () {
+            fetch("/destinations")
+                .then(response => response.json())
+                .then(data => {
+                    const results = document.getElementById("results");
+                    results.innerHTML = "";
+                    data.forEach(destination => {
+                        const dest = document.createElement("div");
+                        dest.classList.add("discount");
+                        dest.innerHTML = `<p> Destination name: ${destination.name} </p>
+                         <p> Country: ${destination.country} </p> 
+                         <p> Description: ${destination.description} </p> `;
+                        results.appendChild(dest);
+                    });
+                })
+                .catch(error => {
+                    console.error("Error fetching destinations:", error);
+                });
+        });
+
+        //List all discounts
+        document.getElementById("listAllDiscounts").addEventListener("click", function () {
+            const soapRequest = `
+        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                          xmlns:web="http://demo.demo.example.com/discounts">
+            <soapenv:Header/>
+            <soapenv:Body>
+                <web:GetAllDiscountsRequest/>
+            </soapenv:Body>
+        </soapenv:Envelope>`;
+
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "https://localhost:8443/ws/discounts", true);
+            xhr.setRequestHeader("Content-Type", "text/xml");
+            xhr.setRequestHeader("Authorization", "Bearer " + token);
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    const responseXml = xhr.responseXML;
+                    const discounts = responseXml.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "discounts");
+
+                    const discountsContainer = document.getElementById("results");
+                    discountsContainer.innerHTML = "";
+
+                    if (discounts.length > 0) {
+                        Array.from(discounts).forEach(discount => {
+                            const id = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "id")[0]?.textContent || "N/A";
+                            const description = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "description")[0]?.textContent || "No description available";
+                            const type = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "type")[0]?.textContent || "N/A";
+                            const status = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "status")[0]?.textContent || "Unknown";
+                            const value = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "value")[0]?.textContent || "0";
+                            const startDate = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "startDate")[0]?.textContent || "No start date";
+                            const endDate = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "endDate")[0]?.textContent || "No end date";
+
+                            const row = document.createElement("div");
+                            row.classList.add("discount");
+                            row.innerHTML = `
+                        <p><strong>ID:</strong> ${id}</p>
+                        <p><strong>Description:</strong> ${description}</p>
+                        <p><strong>Discount Type:</strong> ${type}</p>
+                        <p><strong>Status:</strong> ${status}</p>
+                        <p><strong>Discount Value:</strong> ${value}%</p>
+                        <p><strong>Start Date:</strong> ${startDate}</p>
+                        <p><strong>End Date:</strong> ${endDate}</p>
+                    `;
+
+                            discountsContainer.appendChild(row);
+                        });
+                    } else {
+                        discountsContainer.innerHTML = "<p>No discounts available.</p>";
+                    }
+                } else {
+                    alert("Failed to fetch discounts. Status: " + xhr.status);
+                }
+            };
+
+            xhr.onerror = function () {
+                alert("An error occurred while making the SOAP request.")
+                    ;
+            };
+
+            xhr.send(soapRequest);
+        });
+
+        //List discounts sorted by value
+        document.getElementById("listSortedDiscounts").addEventListener("click", function () {
+            const soapRequest = `
+            <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                    xmlns:dis="http://demo.demo.example.com/discounts">
+                    <soapenv:Header/>
+                    <soapenv:Body>
+                        <dis:GetSortedDiscountsRequest/>
+                    </soapenv:Body>
+            </soapenv:Envelope>`;
+
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "https://localhost:8443/ws/discounts", true);
+            xhr.setRequestHeader("Content-Type", "text/xml");
+            xhr.setRequestHeader("Authorization", "Bearer " + token);
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    const responseXml = xhr.responseXML;
+                    const discounts = responseXml.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "discounts");
+
+                    const discountsContainer = document.getElementById("results");
+                    discountsContainer.innerHTML = "";
+
+                    if (discounts.length > 0) {
+                        Array.from(discounts).forEach(discount => {
+                            const id = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "id")[0]?.textContent || "N/A";
+                            const description = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "description")[0]?.textContent || "No description available";
+                            const type = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "type")[0]?.textContent || "N/A";
+                            const status = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "status")[0]?.textContent || "Unknown";
+                            const value = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "value")[0]?.textContent || "0";
+                            const startDate = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "startDate")[0]?.textContent || "No start date";
+                            const endDate = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "endDate")[0]?.textContent || "No end date";
+
+                            const row = document.createElement("div");
+                            row.classList.add("discount");
+                            row.innerHTML = `
+                        <p><strong>ID:</strong> ${id}</p>
+                        <p><strong>Description:</strong> ${description}</p>
+                        <p><strong>Discount Type:</strong> ${type}</p>
+                        <p><strong>Status:</strong> ${status}</p>
+                        <p><strong>Discount Value:</strong> ${value}%</p>
+                        <p><strong>Start Date:</strong> ${startDate}</p>
+                        <p><strong>End Date:</strong> ${endDate}</p>
+                    `;
+
+                            discountsContainer.appendChild(row);
+                        });
+                    } else {
+                        discountsContainer.innerHTML = "<p>No discounts available.</p>";
+                    }
+                } else {
+                    alert("Failed to fetch discounts. Status: " + xhr.status);
+                }
+            };
+
+            xhr.onerror = function () {
+                alert("An error occurred while making the SOAP request.")
+                    ;
+            };
+
+            xhr.send(soapRequest);
+        });
+
+
+        //List discounts with value above 45% 
+        document.getElementById("listDiscountsAbove45").addEventListener("click", function () {
+            const soapRequest = `
+            <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                  xmlns:dis="http://demo.demo.example.com/discounts">
+                <soapenv:Header/>
+                <soapenv:Body>
+                    <dis:DiscountAbove45Request/>
+                </soapenv:Body>
+            </soapenv:Envelope>`;
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "https://localhost:8443/ws/discounts", true);
+            xhr.setRequestHeader("Content-Type", "text/xml");
+            xhr.setRequestHeader("Authorization", "Bearer " + token);
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    const responseXml = xhr.responseXML;
+                    const discounts = responseXml.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "discounts");
+
+                    const discountsContainer = document.getElementById("results");
+                    discountsContainer.innerHTML = "";
+
+                    if (discounts.length > 0) {
+                        Array.from(discounts).forEach(discount => {
+                            const id = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "id")[0]?.textContent || "N/A";
+                            const description = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "description")[0]?.textContent || "No description available";
+                            const type = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "type")[0]?.textContent || "N/A";
+                            const status = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "status")[0]?.textContent || "Unknown";
+                            const value = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "value")[0]?.textContent || "0";
+                            const startDate = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "startDate")[0]?.textContent || "No start date";
+                            const endDate = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "endDate")[0]?.textContent || "No end date";
+
+                            const row = document.createElement("div");
+                            row.classList.add("discount");
+                            row.innerHTML = `
+                        <p><strong>ID:</strong> ${id}</p>
+                        <p><strong>Description:</strong> ${description}</p>
+                        <p><strong>Discount Type:</strong> ${type}</p>
+                        <p><strong>Status:</strong> ${status}</p>
+                        <p><strong>Discount Value:</strong> ${value}%</p>
+                        <p><strong>Start Date:</strong> ${startDate}</p>
+                        <p><strong>End Date:</strong> ${endDate}</p>
+                    `;
+
+                            discountsContainer.appendChild(row);
+                        });
+                    } else {
+                        discountsContainer.innerHTML = "<p>No discounts available.</p>";
+                    }
+                } else {
+                    alert("Failed to fetch discounts. Status: " + xhr.status);
+                }
+            };
+
+            xhr.onerror = function () {
+                alert("An error occurred while making the SOAP request.")
+                    ;
+            };
+
+            xhr.send(soapRequest);
+        });
+
+        //List discounts ending in 2 days 
+        document.getElementById("listDiscountsEndingIn2Days").addEventListener("click", function () {
+            const soapRequest = `
+            <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                  xmlns:dis="http://demo.demo.example.com/discounts">
+                <soapenv:Header/>
+                <soapenv:Body>
+                    <dis:DiscountEndingIn2DaysRequest/>
+                </soapenv:Body>
+            </soapenv:Envelope>`;
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "https://localhost:8443/ws/discounts", true);
+            xhr.setRequestHeader("Content-Type", "text/xml");
+            xhr.setRequestHeader("Authorization", "Bearer " + token);
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    const responseXml = xhr.responseXML;
+                    const discounts = responseXml.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "discounts");
+
+                    const discountsContainer = document.getElementById("results");
+                    discountsContainer.innerHTML = "";
+
+                    if (discounts.length > 0) {
+                        Array.from(discounts).forEach(discount => {
+                            const id = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "id")[0]?.textContent || "N/A";
+                            const description = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "description")[0]?.textContent || "No description available";
+                            const type = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "type")[0]?.textContent || "N/A";
+                            const status = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "status")[0]?.textContent || "Unknown";
+                            const value = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "value")[0]?.textContent || "0";
+                            const startDate = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "startDate")[0]?.textContent || "No start date";
+                            const endDate = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "endDate")[0]?.textContent || "No end date";
+
+                            const row = document.createElement("div");
+                            row.classList.add("discount");
+                            row.innerHTML = `
+                        <p><strong>ID:</strong> ${id}</p>
+                        <p><strong>Description:</strong> ${description}</p>
+                        <p><strong>Discount Type:</strong> ${type}</p>
+                        <p><strong>Status:</strong> ${status}</p>
+                        <p><strong>Discount Value:</strong> ${value}%</p>
+                        <p><strong>Start Date:</strong> ${startDate}</p>
+                        <p><strong>End Date:</strong> ${endDate}</p>
+                    `;
+
+                            discountsContainer.appendChild(row);
+                        });
+                    } else {
+                        discountsContainer.innerHTML = "<p>No discounts available.</p>";
+                    }
+                } else {
+                    alert("Failed to fetch discounts. Status: " + xhr.status);
+                }
+            };
+
+            xhr.onerror = function () {
+                alert("An error occurred while making the SOAP request.")
+                    ;
+            };
+
+            xhr.send(soapRequest);
+        });
+
+        //List discounts by destination
+        document.getElementById("listDiscountsForDestination").addEventListener("click", function () {
+            const id = document.getElementById("destinationSelect").value;
+            fetch(`/destinations/${id}/discounts`)
+                .then(response => response.json())
+                .then(data => {
+                    const discountsContainer = document.getElementById("results");
+                    discountsContainer.innerHTML = "";
+                    if (Array.isArray(data)) {
+                        data.forEach(discount => {
+                            const dest = document.createElement("div");
+                            dest.classList.add("discount");
+                            dest.innerHTML = `
+                        <p><strong>ID:</strong> ${discount.discountId}</p>
+                        <p><strong>Description:</strong> ${discount.description}</p>
+                        <p><strong>Discount Type:</strong> ${discount.discountType}</p>
+                        <p><strong>Status:</strong> ${discount.status}</p>
+                        <p><strong>Discount Value:</strong> ${discount.discountValue}%</p>
+                        <p><strong>Start Date:</strong> ${discount.startDate}</p>
+                        <p><strong>End Date:</strong> ${discount.endDate}</p>
+                    `;
+                            discountsContainer.appendChild(dest);
+                        });
+                    } else if (data && typeof data === 'object') {
+                        const dest = document.createElement("div");
+                        dest.classList.add("discount");
+                        dest.innerHTML = `
+                    <p><strong>ID:</strong> ${data.discountId}</p>
+                    <p><strong>Description:</strong> ${data.description}</p>
+                    <p><strong>Discount Type:</strong> ${data.discountType}</p>
+                    <p><strong>Status:</strong> ${data.status}</p>
+                    <p><strong>Discount Value:</strong> ${data.discountValue}%</p>
+                    <p><strong>Start Date:</strong> ${data.startDate}</p>
+                    <p><strong>End Date:</strong> ${data.endDate}</p>
+                `;
+                        discountsContainer.appendChild(dest);
+                    } else {
+                        discountsContainer.innerHTML = "<p>No discounts available for this destination.</p>";
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching discounts for destination with ID :" + id, error);
+                });
+        });
+
+        //List discounts by status and type
+        document.getElementById("listDiscountsByStatusAndType").addEventListener("click", function () {
+            const status = document.getElementById("statusSelect").value;
+            const type = document.getElementById("discountTypeSelect").value;
+            console.log("Status:", status);
+            console.log("Type:", type);
+            const soapRequest = `
+            <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                  xmlns:dis="http://demo.demo.example.com/discounts">
+                    <soapenv:Header/>
+                    <soapenv:Body>
+                        <dis:DiscountByStatusAndTypeRequest>
+                            <dis:status>${status}</dis:status>
+                            <dis:type>${type}</dis:type>
+                        </dis:DiscountByStatusAndTypeRequest>
+                    </soapenv:Body>
+            </soapenv:Envelope>`;
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "https://localhost:8443/ws/discounts", true);
+            xhr.setRequestHeader("Content-Type", "text/xml");
+            xhr.setRequestHeader("Authorization", "Bearer " + token);
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    const responseXml = xhr.responseXML;
+                    const discounts = responseXml.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "discounts");
+
+                    const discountsContainer = document.getElementById("results");
+                    discountsContainer.innerHTML = "";
+
+                    if (discounts.length > 0) {
+                        Array.from(discounts).forEach(discount => {
+                            const id = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "id")[0]?.textContent || "N/A";
+                            const description = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "description")[0]?.textContent || "No description available";
+                            const type = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "type")[0]?.textContent || "N/A";
+                            const status = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "status")[0]?.textContent || "Unknown";
+                            const value = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "value")[0]?.textContent || "0";
+                            const startDate = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "startDate")[0]?.textContent || "No start date";
+                            const endDate = discount.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "endDate")[0]?.textContent || "No end date";
+
+                            const row = document.createElement("div");
+                            row.classList.add("discount");
+                            row.innerHTML = `
+                        <p><strong>ID:</strong> ${id}</p>
+                        <p><strong>Description:</strong> ${description}</p>
+                        <p><strong>Discount Type:</strong> ${type}</p>
+                        <p><strong>Status:</strong> ${status}</p>
+                        <p><strong>Discount Value:</strong> ${value}%</p>
+                        <p><strong>Start Date:</strong> ${startDate}</p>
+                        <p><strong>End Date:</strong> ${endDate}</p>
+                    `;
+
+                            discountsContainer.appendChild(row);
+                        });
+                    } else {
+                        discountsContainer.innerHTML = "<p>No discounts available.</p>";
+                    }
+                } else {
+                    alert("Failed to fetch discounts. Status: " + xhr.status);
+                }
+            };
+
+            xhr.onerror = function () {
+                alert("An error occurred while making the SOAP request.")
+                    ;
+            };
+
+            xhr.send(soapRequest);
+        });
+
+        //Filter discounts by destination name or country 
+        document.getElementById("filterDiscountsByDestination").addEventListener("click", function () {
+            const filterInput = document.getElementById("destinationFilter").value;
+            fetch(`/destinations/discounts/filter?destination=${filterInput}`)
+                .then(response => response.json())
+                .then(data => {
+                    const discountsContainer = document.getElementById("results");
+                    discountsContainer.innerHTML = "";
+
+                    if (Array.isArray(data)) {
+                        data.forEach(discount => {
+                            const dest = document.createElement("div");
+                            dest.classList.add("discount");
+                            dest.innerHTML = `
+                        <p><strong>ID:</strong> ${discount.discountId}</p>
+                        <p><strong>Description:</strong> ${discount.description}</p>
+                        <p><strong>Discount Type:</strong> ${discount.discountType}</p>
+                        <p><strong>Status:</strong> ${discount.status}</p>
+                        <p><strong>Discount Value:</strong> ${discount.discountValue}%</p>
+                        <p><strong>Start Date:</strong> ${discount.startDate}</p>
+                        <p><strong>End Date:</strong> ${discount.endDate}</p>
+                    `;
+                            discountsContainer.appendChild(dest);
+                        });
+                    } else if (data && typeof data === 'object') {
+                        const dest = document.createElement("div");
+                        dest.classList.add("discount");
+                        dest.innerHTML = `
+                    <p><strong>ID:</strong> ${data.discountId}</p>
+                    <p><strong>Description:</strong> ${data.description}</p>
+                    <p><strong>Discount Type:</strong> ${data.discountType}</p>
+                    <p><strong>Status:</strong> ${data.status}</p>
+                    <p><strong>Discount Value:</strong> ${data.discountValue}%</p>
+                    <p><strong>Start Date:</strong> ${data.startDate}</p>
+                    <p><strong>End Date:</strong> ${data.endDate}</p>
+                `;
+                        discountsContainer.appendChild(dest);
+                    } else {
+                        discountsContainer.innerHTML = "<p>No discounts available for this destination.</p>";
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching discounts for the filter input", error);
+                });
+        });
+
+        //Add booking
+        document.getElementById("addBookingForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+            const discountSelect = document.getElementById("discountSelect");
+            const selectedDiscountId = discountSelect.value;
+            if (!selectedDiscountId) {
+                alert("Please select a discount.");
+                return;
+            }
+            const timestamp = new Date().toISOString().split(" ")[0];
+            const bookingData = {
+                token: token,
+                discountId: selectedDiscountId,
+                reservationDate: timestamp
+            };
+            console.log(bookingData);
+            fetch("/bookings", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify(bookingData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const results = document.getElementById("results");
+                    results.innerHTML = "Booking with ID " + data.id + " created successfully.";
+                })
+                .catch(error => {
+                    console.error("Error creating booking:", error);
+                    alert("There was an error creating your booking. Please try again.");
+                });
+        });
+
+        //List bookings for user 
+        document.getElementById("listMyBookings").addEventListener("click", function () {
+            var userId = 0;
+            fetch(`/bookings/users?username=${username}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+            })
+                .then(response => response.json())
+                .then(data => {
+                    userId = parseInt(data);
+                    const soapRequest = `
+                    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                                    xmlns:dis="http://demo.demo.example.com/discounts">
+                    <soapenv:Header/>
+                    <soapenv:Body>
+                        <dis:GetUserBookingsRequest>
+                            <dis:userId>${userId}</dis:userId> 
+                        </dis:GetUserBookingsRequest>
+                    </soapenv:Body>
+                    </soapenv:Envelope>`;
+                    const xhr = new XMLHttpRequest();
+                    xhr.open("POST", "https://localhost:8443/ws/discounts", true);
+                    xhr.setRequestHeader("Content-Type", "text/xml");
+                    xhr.setRequestHeader("Authorization", "Bearer " + token);
+                    xhr.onload = function () {
+                        if (xhr.status === 200) {
+                            const responseXml = xhr.responseXML;
+                            console.log(responseXml);
+                            const bookings = responseXml.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "booking");
+                            const bookingsContainer = document.getElementById("results");
+                            bookingsContainer.innerHTML = "";
+                            if (bookings.length > 0) {
+                                console.log(bookings.length);
+                                Array.from(bookings).forEach(booking => {
+                                    const id = booking.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "id")[0]?.textContent || "N/A";
+                                    const description = booking.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "discountDescription")[0]?.textContent || "No description available";
+                                    const reservationDate = booking.getElementsByTagNameNS("http://demo.demo.example.com/discounts", "reservationDate")[0]?.textContent || "No reservation date";
+                                    const row = document.createElement("div");
+                                    row.classList.add("booking");
+                                    row.innerHTML = `
+                                    <p><strong>ID:</strong> ${id}</p>
+                                    <p><strong>Description:</strong> ${description}</p>
+                                    <p><strong>Reservation Date:</strong> ${reservationDate}</p>`;
+                                    bookingsContainer.appendChild(row);
+                                });
+                            } else {
+                                bookingsContainer.innerHTML = "<p>No bookings available.</p>";
+                            }
+                        } else {
+                            alert("Failed to fetch bookings. Status: " + xhr.status);
+                        }
+                    };
+
+                    xhr.onerror = function () {
+                        alert("An error occurred while making the SOAP request.");
+                    };
+
+                    xhr.send(soapRequest);
+                })
+                .catch(error => {
+                    console.error("Error fetching user ID:", error);
+                });
+        });
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        form {
+            display: inline-block;
+            text-align: left;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        input {
+            display: block;
+            width: 90%;
+            margin: 10px 0;
+            padding: 8px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            width: 80%;
+            margin-left: 10%;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #message {
+            margin-top: 10px;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Register</h2>
+    <form id="registerForm">
+        <label>Username:</label>
+        <input type="text" id="username" required>
+        
+        <label>Password:</label>
+        <input type="password" id="password" required>
+        
+        <button type="submit">Register</button>
+    </form>
+
+    <p id="message"></p>
+    <br>
+    <a href="index.html">Back to Home</a>
+
+    <script>
+        document.getElementById("registerForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            console.log("Username:", username);
+            console.log("Password:", password);
+
+            fetch("/api/v1/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.token) { 
+                    localStorage.setItem("token", data.token); 
+                    window.location.href = "index.html";
+                } else {
+                    document.getElementById("message").innerText = data.message || "Registration failed";
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        });
+    </script>
+
+</body>
+</html>
